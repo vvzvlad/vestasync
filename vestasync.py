@@ -39,12 +39,10 @@ args = args[0]
 def parse_address(address):
     pattern = r'^(?P<protocol>http|https)://(?P<host>[^:]+):(?P<port>\d+)(/.*|)$'
     match = re.match(pattern, address)
-
     if match:
         return match.group('protocol'), match.group('host'), match.group('port')
     else:
         raise ValueError("Invalid address format")
-
 
 
 def get_short_sn(c):
@@ -55,6 +53,9 @@ def get_short_sn(c):
 
 def set_hostname(c):
     c.run(f'hostnamectl set-hostname {args.device_new_name}-{device_short_sn}')
+
+def save_hostname(c):
+    c.run(f'echo {hostname} > /mnt/data/etc/vestasync/hostname')
 
 def restore_hostname(c):
     c.run(f'hostnamectl set-hostname `cat /mnt/data/etc/vestasync/hostname`')
@@ -97,14 +98,27 @@ def init_repo(c):
     #c.run(f'cd /mnt/data/etc/ && git remote add origin {args.vestasync_gitea_protocol}://{gitea_user}:{args.gitea_token}@{args.vestasync_gitea_host}:{args.vestasync_gitea_port}/{gitea_user}/{hostname}.git')
 
 
-def create_autogit_sh(c):
-    c.run('echo "#!/usr/bin/env sh" > /mnt/data/etc/pushgit.sh')
-    c.run('echo "cd /mnt/data/etc/" >> /mnt/data/etc/pushgit.sh')
-    c.run('echo "git add ." >> /mnt/data/etc/pushgit.sh')
-    c.run('''echo 'git commit -m "$(date)"' >> /mnt/data/etc/pushgit.sh''')
-    c.run('echo "git push -u origin master" >> /mnt/data/etc/pushgit.sh')
-    c.run('chmod +x /mnt/data/etc/pushgit.sh')
-    c.run('(crontab -l; echo "0 0 * * * /mnt/data/etc/pushgit.sh > /dev/null 2>&1 ") | crontab -')
+def create_automac_systemd(c):
+    apply_macs_script_path = "/usr/local/bin/apply_macs.sh"
+    c.put("apply_macs.sh", apply_macs_script_path)
+    c.run(f"chmod +x {apply_macs_script_path}")
+
+    c.put("apply_macs.service", "/etc/systemd/system/apply_macs.service")
+    c.run("systemctl daemon-reload")
+    c.run("systemctl enable apply_macs.service")
+
+def create_autogit_systemd(c):
+    pushgit_script_path = "/mnt/data/etc/pushgit.sh"
+    c.put("pushgit.sh", pushgit_script_path)
+    c.run(f"chmod +x {pushgit_script_path}")
+
+    c.put("pushgit.service", "/etc/systemd/system/pushgit.service")
+    c.put("pushgit.timer", "/etc/systemd/system/pushgit.timer")
+
+    c.run("systemctl daemon-reload")
+    c.run("systemctl enable pushgit.timer")
+    c.run("systemctl start pushgit.timer")
+
 
 def git_clone(c):
     c.run(f'mkdir /mnt/data/{args.source_hostname}_etc ', hide=True)
@@ -159,10 +173,10 @@ def save_mac_in_cfg(c):
         if re.match(r'^(eth|wlan)', ifname):
             mac_address = interface["address"]
             c.run(f"echo {mac_address} > /mnt/data/etc/vestasync/macs/{ifname}")
-    c.run(f'echo {hostname} > /mnt/data/etc/vestasync/hostname')
 
 
-def device_prepare():
+
+def device_install():
     with Connection(host=args.device_ip, user=device_user) as c:
         #prepare_packages_wb(c)
         #configure_git(c)
@@ -170,8 +184,10 @@ def device_prepare():
         #set_hostname(c)
         #create_repo(c)
         #init_repo(c)
+        #create_autogit_systemd(c)
         #ppush_the_repo(c)
         save_mac_in_cfg(c)
+        save_hostname(c)
         ppush_the_repo(c)
 
 def device_update():
@@ -182,11 +198,11 @@ def device_restore():
     with Connection(host=args.device_ip, user=device_user) as c:
         #prepare_packages_wb(c)
         #configure_git(c)
-        git_clone(c)
-        copy_etc(c)
-        ppush_the_repo(c)
-        restore_hostname(c)
-        create_autogit_sh(c)
+        #git_clone(c)
+        #copy_etc(c)
+        #ppush_the_repo(c)
+        #restore_hostname(c)
+        create_autogit_systemd(c)
 
 
 if __name__ == '__main__':
@@ -197,10 +213,8 @@ if __name__ == '__main__':
         print(e)
         exit(1)
 
-    if cmd_args.cmd == "prepare":
-        device_prepare()
-    if cmd_args.cmd == "update":
-        device_update()
+    if cmd_args.cmd == "install":
+        device_install()
     if cmd_args.cmd == "restore":
         device_restore()
 
