@@ -162,6 +162,12 @@ def ppush_the_repo(c):
             print(f"Error: {e.result.stderr}")
     c.run('cd /mnt/data/etc/ && git push -u origin master', hide=True)
 
+def run_user_cmd(c):
+    user_cmd_file = "/tmp/user_cmd.sh"
+    c.put("user_cmd.sh", user_cmd_file)
+    c.run(f"chmod +x {user_cmd_file}")
+    c.run(f"{user_cmd_file}")
+    c.run(f"rm {user_cmd_file}")
 
 def save_mac_in_cfg(c):
     hostname = c.run('hostname', hide=True).stdout.strip()
