@@ -97,6 +97,9 @@ def init_repo(c):
     c.run(f'cd /mnt/data/etc/ && git remote add origin {args.vestasync_gitea_protocol}://{gitea_user}:{args.gitea_token}@{args.vestasync_gitea_host}:{args.vestasync_gitea_port}/{gitea_user}/{hostname}.git')
 
 
+def copy_wb_rule(c):
+    c.put("./files/vestasync.js", "/mnt/data/etc/wb-rules/vestasync.js")
+
 def create_automac_systemd(c):
     apply_macs_script_path = "/usr/local/bin/apply_macs.sh"
     c.put("./files/apply_macs.sh", apply_macs_script_path)
@@ -202,6 +205,7 @@ def device_install():
         ppush_the_repo(c)
         save_mac_in_cfg(c)
         save_hostname(c)
+        copy_wb_rule(c)
         ppush_the_repo(c)
         create_automac_systemd(c)
         create_autogit_systemd(c)
