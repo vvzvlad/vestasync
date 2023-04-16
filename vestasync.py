@@ -93,8 +93,8 @@ def create_repo(c):
 
 def init_repo(c):
     hostname = c.run('hostname', hide=True).stdout.strip()
-    #c.run('cd /mnt/data/etc/ && git init')
-    #c.run(f'cd /mnt/data/etc/ && git remote add origin {args.vestasync_gitea_protocol}://{gitea_user}:{args.gitea_token}@{args.vestasync_gitea_host}:{args.vestasync_gitea_port}/{gitea_user}/{hostname}.git')
+    c.run('cd /mnt/data/etc/ && git init')
+    c.run(f'cd /mnt/data/etc/ && git remote add origin {args.vestasync_gitea_protocol}://{gitea_user}:{args.gitea_token}@{args.vestasync_gitea_host}:{args.vestasync_gitea_port}/{gitea_user}/{hostname}.git')
 
 
 def create_automac_systemd(c):
@@ -190,22 +190,21 @@ def save_mac_in_cfg(c):
 
 
 def device_install():
-    with Connection(host=args.device_ip, user=device_user) as c:
-        #prepare_packages_wb(c)
-        #configure_git(c)
-        #get_short_sn(c)
-        #set_hostname(c)
-        #create_repo(c)
-        #init_repo(c)
-        #create_autogit_systemd(c)
-        #ppush_the_repo(c)
+    with Connection(host=args.device_ip, user=device_user, connect_kwargs={"password": "wirenboard"}) as c:
+        prepare_packages_wb(c)
+        configure_git(c)
+        get_short_sn(c)
+        set_hostname(c)
+        create_repo(c)
+        init_repo(c)
+        ppush_the_repo(c)
         save_mac_in_cfg(c)
         save_hostname(c)
         ppush_the_repo(c)
-
-def device_update():
-    with Connection(host=args.device_ip, user=device_user) as c:
-        ppush_the_repo(c)
+        create_automac_systemd(c)
+        create_autogit_systemd(c)
+        run_user_cmd(c)
+        reboot(c)
 
 def device_restore():
     with Connection(host=args.device_ip, user=device_user) as c:
@@ -213,9 +212,11 @@ def device_restore():
         #configure_git(c)
         #git_clone(c)
         #copy_etc(c)
-        #ppush_the_repo(c)
         #restore_hostname(c)
+        #ppush_the_repo(c)
+
         create_autogit_systemd(c)
+        create_automac_systemd(c)
 
 
 if __name__ == '__main__':
