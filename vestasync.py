@@ -126,6 +126,8 @@ def create_autogit_systemd(c):
     c.run("systemctl enable pushgit_inotify.service")
     c.run("systemctl start pushgit_inotify.service")
 
+def reboot(c):
+    c.run("reboot > /dev/null 2>&1 || true")
 
 def git_clone(c):
     c.run(f'mkdir /mnt/data/{args.source_hostname}_etc ', hide=True)
