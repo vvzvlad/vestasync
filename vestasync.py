@@ -98,31 +98,53 @@ def init_repo(c):
 
 
 def copy_wb_rule(c):
-    c.put("./files/vestasync.js", "/mnt/data/etc/wb-rules/vestasync.js")
+    wb_rule_path = "/mnt/data/etc/wb-rules/vestasync.js"
+    c.run(f"rm {wb_rule_path} || true")
+    c.put("./files/vestasync.js", wb_rule_path)
 
 def create_automac_systemd(c):
     apply_macs_script_path = "/usr/local/bin/apply_macs.sh"
+    c.run(f"rm {apply_macs_script_path} || true")
     c.put("./files/apply_macs.sh", apply_macs_script_path)
     c.run(f"chmod +x {apply_macs_script_path}")
 
-    c.put("./files/apply_macs.service", "/etc/systemd/system/apply_macs.service")
+    apply_macs_service_path = "/etc/systemd/system/apply_macs.service"
+    c.run(f"rm {apply_macs_service_path} || true")
+    c.put("./files/apply_macs.service", apply_macs_service_path)
+
+    c.run("systemctl disable apply_macs.service || true")
     c.run("systemctl daemon-reload")
     c.run("systemctl enable apply_macs.service")
 
 def create_autogit_systemd(c):
     pushgit_script_path = "/usr/local/bin/pushgit.sh"
+    c.run(f"rm {pushgit_script_path} || true")
     c.put("./files/pushgit.sh", pushgit_script_path)
     c.run(f"chmod +x {pushgit_script_path}")
 
     pushgit_inotify_script_path = "/usr/local/bin/pushgit_inotify.sh"
+    c.run(f"rm {pushgit_inotify_script_path} || true")
     c.put("./files/pushgit.sh", pushgit_inotify_script_path)
     c.run(f"chmod +x {pushgit_inotify_script_path}")
 
-    c.put("./files/pushgit.service", "/etc/systemd/system/pushgit.service")
-    c.put("./files/pushgit.timer", "/etc/systemd/system/pushgit.timer")
+    pushgit_inotify_service_path = "/etc/systemd/system/pushgit_inotify.service"
+    c.run(f"rm {pushgit_inotify_service_path} || true")
+    c.put("./files/pushgit_inotify.service", pushgit_inotify_service_path)
+    c.run(f"chmod +x {pushgit_inotify_service_path}")
 
-    c.put("./files/pushgit_inotify.service", "/etc/systemd/system/pushgit_inotify.service")
+    pushgit_service_path = "/etc/systemd/system/pushgit.service"
+    c.run(f"rm {pushgit_service_path} || true")
+    c.put("./files/pushgit.service", pushgit_service_path)
+    c.run(f"chmod +x {pushgit_service_path}")
 
+    pushgit_timer_path = "/etc/systemd/system/pushgit.timer"
+    c.run(f"rm {pushgit_timer_path} || true")
+    c.put("./files/pushgit.timer", pushgit_timer_path)
+    c.run(f"chmod +x {pushgit_timer_path}")
+
+
+    c.run("systemctl disable pushgit.timer || true")
+    c.run("systemctl disable pushgit_inotify.service || true")
     c.run("systemctl daemon-reload")
     c.run("systemctl enable pushgit.timer")
     c.run("systemctl start pushgit.timer")
@@ -192,25 +214,35 @@ def save_mac_in_cfg(c):
             mac_address = interface["address"]
             c.run(f"echo {mac_address} > /mnt/data/etc/vestasync/macs/{ifname}")
 
-
+def check_vestasync_installed(c):
+    vestasync_path = "/mnt/data/etc/vestasync"
+    result = c.run(f"test -d {vestasync_path}", warn=True)
+    return result.ok
 
 def device_install():
     with Connection(host=args.device_ip, user=device_user, connect_kwargs={"password": "wirenboard"}) as c:
-        prepare_packages_wb(c)
-        configure_git(c)
-        get_short_sn(c)
-        set_hostname(c)
-        create_repo(c)
-        init_repo(c)
-        ppush_the_repo(c)
-        save_mac_in_cfg(c)
-        save_hostname(c)
-        copy_wb_rule(c)
-        ppush_the_repo(c)
-        create_automac_systemd(c)
-        create_autogit_systemd(c)
-        run_user_cmd(c)
-        reboot(c)
+        if not check_vestasync_installed(c):
+            prepare_packages_wb(c)
+            configure_git(c)
+            get_short_sn(c)
+            set_hostname(c)
+            create_repo(c)
+            init_repo(c)
+            ppush_the_repo(c)
+            save_mac_in_cfg(c)
+            save_hostname(c)
+            copy_wb_rule(c)
+            ppush_the_repo(c)
+            create_automac_systemd(c)
+            create_autogit_systemd(c)
+            run_user_cmd(c)
+            reboot(c)
+        else:
+            print("Found vestasync! Update...")
+            copy_wb_rule(c)
+            create_automac_systemd(c)
+            create_autogit_systemd(c)
+
 
 def device_restore():
     with Connection(host=args.device_ip, user=device_user) as c:
