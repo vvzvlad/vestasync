@@ -1,0 +1,9 @@
+[Unit]
+Description=Push git changes daily
+
+[Service]
+Type=oneshot
+ExecStart=/mnt/data/etc/pushgit.sh
+
+[Install]
+WantedBy=multi-user.target

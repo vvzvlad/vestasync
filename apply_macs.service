@@ -1,0 +1,7 @@
+[Unit]
+Description=Apply MAC addresses to network interfaces
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/apply_macs.sh
+[Install]
+WantedBy=multi-user.target
