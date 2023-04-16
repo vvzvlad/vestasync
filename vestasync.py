@@ -112,12 +112,20 @@ def create_autogit_systemd(c):
     c.put("./files/pushgit.sh", pushgit_script_path)
     c.run(f"chmod +x {pushgit_script_path}")
 
+    pushgit_inotify_script_path = "/usr/local/bin/pushgit_inotify.sh"
+    c.put("./files/pushgit.sh", pushgit_inotify_script_path)
+    c.run(f"chmod +x {pushgit_inotify_script_path}")
+
     c.put("./files/pushgit.service", "/etc/systemd/system/pushgit.service")
     c.put("./files/pushgit.timer", "/etc/systemd/system/pushgit.timer")
+
+    c.put("./files/pushgit_inotify.service", "/etc/systemd/system/pushgit_inotify.service")
 
     c.run("systemctl daemon-reload")
     c.run("systemctl enable pushgit.timer")
     c.run("systemctl start pushgit.timer")
+    c.run("systemctl enable pushgit_inotify.service")
+    c.run("systemctl start pushgit_inotify.service")
 
 
 def git_clone(c):
