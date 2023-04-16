@@ -55,10 +55,10 @@ def set_hostname(c):
     c.run(f'hostnamectl set-hostname {args.device_new_name}-{device_short_sn}')
 
 def save_hostname(c):
-    c.run(f'echo {hostname} > /mnt/data/etc/vestasync/hostname')
+    c.run(f'echo $(hostname) > /mnt/data/etc/vestasync/hostname')
 
 def restore_hostname(c):
-    c.run(f'hostnamectl set-hostname `cat /mnt/data/etc/vestasync/hostname`')
+    c.run(f'hostnamectl set-hostname $(cat /mnt/data/etc/vestasync/hostname)')
 
 
 def prepare_packages_wb(c):
