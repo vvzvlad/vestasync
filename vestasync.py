@@ -70,8 +70,7 @@ def prepare_packages_wb(c):
 
 
 def configure_git(c):
-    hostname = c.run('hostname', hide=True).stdout.strip()
-    c.run(f'git config --global user.name vestasync_wb_{hostname}')
+    c.run(f'git config --global user.name vestasync_wb_$(hostname)_manual')
     c.run(f'git config --global user.email "vestasync@fake.mail"')
     c.run(f'git config --global init.defaultBranch "master"')
 
