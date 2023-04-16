@@ -108,7 +108,7 @@ def create_automac_systemd(c):
     c.run("systemctl enable apply_macs.service")
 
 def create_autogit_systemd(c):
-    pushgit_script_path = "/mnt/data/etc/pushgit.sh"
+    pushgit_script_path = "/usr/local/bin/pushgit.sh"
     c.put("./files/pushgit.sh", pushgit_script_path)
     c.run(f"chmod +x {pushgit_script_path}")
 

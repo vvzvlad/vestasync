@@ -1,8 +1,8 @@
 [Unit]
-Description=Run pushgit.service daily
+Description=Run pushgit.service
 
 [Timer]
-OnCalendar=daily
+OnCalendar=*:0/10
 Persistent=true
 Unit=pushgit.service
 
