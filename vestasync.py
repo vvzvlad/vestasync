@@ -100,20 +100,20 @@ def init_repo(c):
 
 def create_automac_systemd(c):
     apply_macs_script_path = "/usr/local/bin/apply_macs.sh"
-    c.put("apply_macs.sh", apply_macs_script_path)
+    c.put("./files/apply_macs.sh", apply_macs_script_path)
     c.run(f"chmod +x {apply_macs_script_path}")
 
-    c.put("apply_macs.service", "/etc/systemd/system/apply_macs.service")
+    c.put("./files/apply_macs.service", "/etc/systemd/system/apply_macs.service")
     c.run("systemctl daemon-reload")
     c.run("systemctl enable apply_macs.service")
 
 def create_autogit_systemd(c):
     pushgit_script_path = "/mnt/data/etc/pushgit.sh"
-    c.put("pushgit.sh", pushgit_script_path)
+    c.put("./files/pushgit.sh", pushgit_script_path)
     c.run(f"chmod +x {pushgit_script_path}")
 
-    c.put("pushgit.service", "/etc/systemd/system/pushgit.service")
-    c.put("pushgit.timer", "/etc/systemd/system/pushgit.timer")
+    c.put("./files/pushgit.service", "/etc/systemd/system/pushgit.service")
+    c.put("./files/pushgit.timer", "/etc/systemd/system/pushgit.timer")
 
     c.run("systemctl daemon-reload")
     c.run("systemctl enable pushgit.timer")
