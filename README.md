@@ -126,7 +126,7 @@ reboot
 Чтобы отключить сохранение по изменению файлов, надо остановить службу: ```systemctl stop pushgit_inotify.service```. Запустить обратно — ```systemctl start pushgit_inotify.service```.  
 
 Управлять службами можно из виджета, скрипт для которого устанавливается на контроллер автоматически. 
-![Внешний вид виджета](miscellaneous/panel.png)
+![Внешний вид виджета](miscellaneous/panel.png){height=50%}
 
 
 Для принудительной загрузки конфигов надо выполнить в консоли контроллера ```systemctl start pushgit.service```
