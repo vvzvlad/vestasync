@@ -174,8 +174,13 @@ def create_autogit_systemd(c):
         enabled = c.run(f'systemctl is-enabled {service}  || true', hide=True).stdout.strip()
         print(f"{service}: {active}, {enabled}")
 
-
-
+def mark_original_restored(c, mark):
+    if mark == "original":
+        c.run("rm /mnt/data/etc/vestasync/restored", warn=True)
+        c.run("touch /mnt/data/etc/vestasync/original", warn=True)
+    if mark == "restored":
+        c.run("touch /mnt/data/etc/vestasync/restored", warn=True)
+        c.run("rm /mnt/data/etc/vestasync/original", warn=True)
 
 def reboot(c):
     c.run("reboot > /dev/null 2>&1", warn=True)
@@ -277,6 +282,7 @@ def device_install(c):
     ppush_the_repo(c)
     create_automac_systemd(c)
     create_autogit_systemd(c)
+    mark_original_restored(c, "original")
     reboot(c)
     print(f"Install vestasync complete (hostname {hostname}), rebooting target device..\n")
 
@@ -312,6 +318,7 @@ def device_restore():
                 ppush_the_repo(c)
                 create_autogit_systemd(c)
                 create_automac_systemd(c)
+                mark_original_restored(c, "restored")
                 if args.user_cmd is not None:
                     run_user_cmd(c, args.user_cmd_file)
                 reboot(c)
