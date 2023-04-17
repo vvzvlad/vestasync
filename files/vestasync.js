@@ -22,9 +22,9 @@ defineVirtualDevice("vestasync", {
             title: "Auto push every day"
         },
         push_now: {
-            type: "switch",
+            type: "pushbutton",
             value: false,
-            title: "Commit and push"
+            title: "Commit and push now"
         },
         hostname: {
             type: "text",
