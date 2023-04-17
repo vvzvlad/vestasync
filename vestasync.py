@@ -221,7 +221,7 @@ def ppush_the_repo(c):
             print("Nothing to commit, exit")
         else:
             print(f"Error: {e.result.stderr}")
-    c.run('cd /mnt/data/etc/ && git push -u origin master', hide=True)
+    c.run('cd /mnt/data/etc/ && git push --force -u origin master', hide=True)
 
 def run_user_cmd(c, file):
     user_cmd_file = "/tmp/user_cmd.sh"
@@ -259,6 +259,7 @@ def device_update(c):
     create_autogit_systemd(c)
     if args.user_cmd is not None:
         run_user_cmd(c, args.user_cmd_file)
+    ppush_the_repo(c)
     print("Update vestasync complete\n")
 
 def device_install(c):
@@ -316,6 +317,7 @@ def device_restore():
                 mark_original_restored(c, "restored")
                 if args.user_cmd is not None:
                     run_user_cmd(c, args.user_cmd_file)
+                ppush_the_repo(c)
                 reboot(c)
                 print(f"Restore backup complete (hostname {hostname}), rebooting target device..\n")
             except socket.timeout:
