@@ -102,9 +102,7 @@ def init_repo(c):
 
 
 def copy_wb_rule(c):
-    wb_rule_path = "/mnt/data/etc/wb-rules/vestasync.js"
-    c.run(f"rm {wb_rule_path} || true")
-    c.put("./files/vestasync.js", wb_rule_path)
+    c.put("./files/vestasync.js", "/mnt/data/etc/wb-rules/vestasync.js")
 
 def create_automac_systemd(c):
     #disable
@@ -118,9 +116,7 @@ def create_automac_systemd(c):
     }
 
     for local_path, remote_path in file_paths.items():
-        c.run(f"rm {remote_path} || true")
         c.put(local_path, remote_path)
-        c.run(f"chmod +x {remote_path}")
 
     #reload
     c.run("systemctl daemon-reload")
@@ -157,9 +153,7 @@ def create_autogit_systemd(c):
     }
 
     for local_path, remote_path in file_paths.items():
-        c.run(f"rm {remote_path} || true")
         c.put(local_path, remote_path)
-        c.run(f"chmod +x {remote_path}")
 
     #reload
     c.run("systemctl daemon-reload")
@@ -232,8 +226,7 @@ def ppush_the_repo(c):
 def run_user_cmd(c, file):
     user_cmd_file = "/tmp/user_cmd.sh"
     c.put(file, user_cmd_file)
-    c.run(f"chmod +x {user_cmd_file}")
-    c.run(f"{user_cmd_file}")
+    c.run(f"bash {user_cmd_file}")
     c.run(f"rm {user_cmd_file}")
 
 def save_mac_in_cfg(c):
