@@ -74,7 +74,7 @@ function _update_vestasync() {
         captureOutput: true,
         exitCallback: function (exitCode, capturedOutput) {
             var isEnabled = capturedOutput.trim() === "active";
-            dev.vestasync.autopush_inotify = isEnabled;
+            getControl("vestasync/autopush_inotify").setValue({ value: isEnabled, notify: false })
         }
     });
 
@@ -82,7 +82,7 @@ function _update_vestasync() {
         captureOutput: true,
         exitCallback: function (exitCode, capturedOutput) {
             var isEnabled = capturedOutput.trim() === "active";
-            dev.vestasync.autopush_timer = isEnabled;
+            getControl("vestasync/autopush_inotify").setValue({ value: isEnabled, notify: false })
         }
     });
 
