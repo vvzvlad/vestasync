@@ -104,10 +104,10 @@ defineRule("_vestasync_autopush_timer", {
     whenChanged: "vestasync/autopush_timer",
     then: function (newValue, devName, cellName) {
         if (dev.vestasync.autopush_timer) {
-            runShellCommand("systemctl daemon-reload ; systemctl enable pushgit.timer ; systemctl start pushgit.timer; sleep 10");
+            runShellCommand("systemctl stop pushgit.timer ; systemctl disable pushgit.timer ; systemctl daemon-reload ; systemctl enable pushgit.timer ; systemctl start pushgit.timer");
             _update_vestasync();
         } else {
-            runShellCommand("systemctl stop pushgit.timer ; systemctl disable pushgit.timer; sleep 10");
+            runShellCommand("systemctl stop pushgit.timer ; systemctl disable pushgit.timer");
             _update_vestasync();
         }
     }
@@ -118,20 +118,22 @@ defineRule("_vestasync_autopush_inotify", {
     whenChanged: "vestasync/autopush_inotify",
     then: function (newValue, devName, cellName) {
         if (dev.vestasync.autopush_inotify) {
-            runShellCommand("systemctl daemon-reload ; systemctl enable pushgit_inotify.service ; systemctl start pushgit_inotify.service; sleep 10");
+            runShellCommand("systemctl stop pushgit_inotify.service ; systemctl disable pushgit_inotify.service ; systemctl daemon-reload ; systemctl enable pushgit_inotify.service ; systemctl start pushgit_inotify.service");
             _update_vestasync();
         } else {
-            runShellCommand("systemctl stop pushgit_inotify.service ; systemctl disable pushgit_inotify.service; sleep 10");
+            runShellCommand("systemctl stop pushgit_inotify.service ; systemctl disable pushgit_inotify.service");
             _update_vestasync();
         }
     }
 });
 
+
+
 defineRule("_vestasync_push", {
     whenChanged: "vestasync/push_now",
     then: function (newValue, devName, cellName) {
         if (dev.vestasync.push_now) {
-            runShellCommand("systemctl start pushgit.service; sleep 2");
+            runShellCommand("systemctl start pushgit.service");
             dev.vestasync.push_now = false;
             _update_vestasync();
         }
@@ -140,6 +142,6 @@ defineRule("_vestasync_push", {
 
 
 _update_vestasync();
-setInterval(_update_vestasync, 11000);
+setInterval(_update_vestasync, 60000);
 
 
