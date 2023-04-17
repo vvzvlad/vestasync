@@ -60,15 +60,11 @@ function _update_vestasync() {
         }
     });
 
-    runShellCommand("systemctl is-enabled pushgit_inotify.service", {
+    runShellCommand("systemctl is-active pushgit_inotify.service", {
         captureOutput: true,
         exitCallback: function (exitCode, capturedOutput) {
-            if (exitCode === 0) {
-                var isEnabled = capturedOutput.trim() === "enabled";
-                dev.vestasync.autopush = isEnabled;
-            } else {
-                log("Error checking autopush status:" + capturedOutput + exitCode);
-            }
+            var isEnabled = capturedOutput.trim() === "active";
+            dev.vestasync.autopush = isEnabled;
         }
     });
 
@@ -91,15 +87,15 @@ defineRule("_vestasync_autopush", {
     whenChanged: "vestasync/autopush",
     then: function (newValue, devName, cellName) {
         if (dev.vestasync.autopush) {
-            runShellCommand("systemctl start pushgit_inotify.service");
+            runShellCommand("systemctl daemon-reload ; systemctl enable pushgit_inotify.service ; systemctl start pushgit_inotify.service");
         } else {
-            runShellCommand("systemctl stop pushgit_inotify.service");
+            runShellCommand("systemctl stop pushgit_inotify.service ; systemctl disable pushgit_inotify.service");
         }
     }
 });
 
 
 _update_vestasync();
-setInterval(_update_vestasync, 10000);
+setInterval(_update_vestasync, 11000);
 
 
