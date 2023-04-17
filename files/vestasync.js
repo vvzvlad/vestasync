@@ -1,12 +1,12 @@
 defineVirtualDevice("vestasync", {
     title: "Vestasync",
     cells: {
-        "Last push": {
+        last_push: {
             type: "text",
             value: "Update...",
             title: "Last push"
         },
-        "Current commit": {
+        last_commit: {
             type: "text",
             value: "Update...",
             title: "Last commit hash"
@@ -56,7 +56,7 @@ function _update_vestasync() {
                 } else {
                     human_readable_time = "just now";
                 }
-                dev.vestasync["Last push"] = human_readable_time;
+                dev.vestasync.last_push = human_readable_time;
             }
         }
     });
@@ -65,7 +65,7 @@ function _update_vestasync() {
         exitCallback: function (exitCode, capturedOutput) {
             if (exitCode === 0) {
                 var shortenedCommit = capturedOutput.trim().substring(0, 10);
-                dev.vestasync["Current commit"] = shortenedCommit;
+                dev.vestasync.last_commit = shortenedCommit;
             }
         }
     });
