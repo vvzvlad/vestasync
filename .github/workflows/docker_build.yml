@@ -26,4 +26,4 @@ jobs:
       with:
         context: .
         push: true
-        tags: vvzlad/vestasync:latest
+        tags: vvzvlad/vestasync:latest
