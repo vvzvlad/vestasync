@@ -244,7 +244,7 @@ def check_vestasync_installed(c):
     result = c.run(f"test -d {vestasync_path}", warn=True)
     return result.ok
 
-def device_install(c):
+def device_update(c):
     print("Found vestasync! Update...")
     copy_wb_rule(c)
     create_automac_systemd(c)
@@ -253,7 +253,7 @@ def device_install(c):
         run_user_cmd(c, args.user_cmd_file)
     print("Update vestasync complete\n")
 
-def device_update(c):
+def device_install(c):
     print("Not found vestasync! Install...")
     prepare_packages_wb(c)
     configure_git(c)
@@ -278,9 +278,9 @@ def device_install_or_update():
             print(f"\nConnect to {device_ip} as {device_user}..")
             try:
                 if not check_vestasync_installed(c):
-                    device_update(c)
-                else:
                     device_install(c)
+                else:
+                    device_update(c)
             except socket.timeout:
                 print(f"Failed to connect to the host {device_ip}")
 
