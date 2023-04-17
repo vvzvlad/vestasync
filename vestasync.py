@@ -109,6 +109,7 @@ def copy_wb_rule(c):
 def create_automac_systemd(c):
     #disable
     for service in ['apply_macs.service']:
+        c.run(f'systemctl stop {service}', warn=True)
         c.run(f'systemctl disable {service}', warn=True)
 
     file_paths = { #local path: remote path
@@ -142,6 +143,7 @@ def create_automac_systemd(c):
 def create_autogit_systemd(c):
     #disable
     for service in ['pushgit.timer', 'pushgit_inotify.service']:
+        c.run(f'systemctl stop {service}', warn=True)
         c.run(f'systemctl disable {service}', warn=True)
 
 
