@@ -3,5 +3,8 @@ cd && mkdir .ssh ; echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC/mtlYUEoWutGWNhj
 
 timedatectl set-timezone Asia/Krasnoyarsk
 localectl set-locale LANG=en_GB.UTF-8
-timedatectl set-ntp 1
+
+service ntp stop
+ntpdate pool.ntp.org
+service ntp start
 hwclock --systohc --localtime
