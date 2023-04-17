@@ -58,14 +58,15 @@ docker run -it --name vestasync vvzvlad/vestasync:latest ./vestasync.py --cmd in
 Пример запуска (запускается на локальной машине, адрес контроллера указывается в ```device_ip```):
 
 ```bash
-./vestasync.py 
---cmd install 
---device_ip 192.168.1.85 
---gitea_address http://192.168.1.101:3001/ 
---device_new_name WB2 
---gitea_token de8a2eaee0d2f27746157c2fd563815f932d671c
+./vestasync.py \
+--cmd install \
+--device_ip 192.168.1.85 \
+--gitea_address http://192.168.1.101:3001/ \
+--device_new_name WB2 \
+--gitea_token de8a2eaee0d2f27746157c2fd563815f932d671c \
 --user_cmd user_cmd.sh 
 ```
+
 
 ```--cmd install``` означает, что надо установить Vestasync на контроллер и подготовить его к созданию бекапа  
 ```--device_ip``` IP-адрес контроллера  
@@ -93,12 +94,12 @@ hwclock --systohc --localtime
 Пример запуска (запускается на локальной машине, адрес контроллера указывается в ```device_ip```):
 
 ```bash
-./vestasync.py 
---cmd restore 
---device_ip 192.168.1.85 
---gitea_address http://192.168.1.101:3001/ 
---gitea_token de8a2eaee0d2f27746157c2fd563815f932d671c
---source_hostname WB2-A3TBJXLS
+./vestasync.py \
+--cmd restore \
+--device_ip 192.168.1.85 \
+--gitea_address http://192.168.1.101:3001/ \
+--gitea_token de8a2eaee0d2f27746157c2fd563815f932d671c \
+--source_hostname WB2-A3TBJXLS \
 --reinstall_packages yes
 ```
 
@@ -145,12 +146,12 @@ reboot
 При повторном запуске команда ```install``` перезапишет файлы скриптов и сервисов для обновления скриптов на существующих контроллерах, если вышла новая версия VestaSync.
 В этом случае в ```--device_ip``` можно передать несколько IP-адресов, разделенных пробелами:  
 
-```
-./vestasync.py --cmd install
---device_ip ==> 192.168.98.92 192.168.98.85 <==
---gitea_address http://192.168.98.101:3001/
---device_new_name WB1
---gitea_token de8a2eaee0d2f27746157c2fd563815f932d670c
+```bash
+./vestasync.py --cmd install \
+--device_ip 192.168.98.92 192.168.98.85 \
+--gitea_address http://192.168.98.101:3001/ \
+--device_new_name WB1 \
+--gitea_token de8a2eaee0d2f27746157c2fd563815f932d670c 
 ```
 
 Обратите внимание, что устанавливать Vestasync на несколько контроллеров лучше с помощью скрипта ниже из раздела "Множественный запуск", потому что при указании набора из нескольких адресов ```device_ip``` с командой ```install``` у них будет одинаковые имена хостов (```--device_new_name WB1```), отличающееся только серийным номером: WB1-AFYATAO7, WB1-A3TBJXLS и так далее.
