@@ -126,7 +126,7 @@ def create_automac_systemd(c):
     #enable and start
     for service in ['apply_macs.service']:
         c.run(f'systemctl enable {service}')
-        c.run(f'systemctl start {service}')
+        #c.run(f'systemctl start {service}')
 
 
     #check statuses
@@ -180,7 +180,7 @@ def reboot(c):
     c.run("reboot > /dev/null 2>&1 || true")
 
 def git_clone(c):
-    c.run(f'mkdir /mnt/data/{args.source_hostname}_etc ', hide=True)
+    c.run(f'mkdir -p /mnt/data/{args.source_hostname}_etc ', hide=True)
     c.run(f'git clone {args.vestasync_gitea_protocol}://{gitea_user}:{args.gitea_token}@{args.vestasync_gitea_host}:{args.vestasync_gitea_port}/{gitea_user}/{args.source_hostname}.git /mnt/data/{args.source_hostname}_etc')
 
 def copy_etc(c):
@@ -249,6 +249,7 @@ def device_install(c):
     copy_wb_rule(c)
     create_automac_systemd(c)
     create_autogit_systemd(c)
+    run_user_cmd(c)
     print("Update vestasync complete\n")
 
 def device_update(c):
@@ -266,9 +267,8 @@ def device_update(c):
     ppush_the_repo(c)
     create_automac_systemd(c)
     create_autogit_systemd(c)
-    run_user_cmd(c)
     reboot(c)
-    print(f"Install vestasync complete (hostname {hostname}), reboot target device\n")
+    print(f"Install vestasync complete (hostname {hostname}), rebooting target device..\n")
 
 def device_install_or_update():
     print(f"Install/update command on host(s) {', '.join(args.device_ip)}")
@@ -286,18 +286,23 @@ def device_install_or_update():
 
 def device_restore():
     for device_ip in args.device_ip:
-        with Connection(host=device_ip, user=device_user) as c:
+        with Connection(host=device_ip, user=device_user, connect_kwargs={"password": "wirenboard"}) as c:
             print(f"\nConnect to {device_ip} as {device_user}..")
             try:
-                if check_vestasync_installed(c):
+                if not check_vestasync_installed(c):
+                    print("Not found vestasync! Install...")
                     prepare_packages_wb(c)
                     configure_git(c)
+                print(f"Restore to {device_ip} backup from {args.source_hostname}")
                 git_clone(c)
                 copy_etc(c)
                 restore_hostname(c)
                 ppush_the_repo(c)
                 create_autogit_systemd(c)
                 create_automac_systemd(c)
+                run_user_cmd(c)
+                reboot(c)
+                print(f"Restore backup complete (hostname {hostname}), rebooting target device..\n")
             except socket.timeout:
                 print(f"Failed to connect to the host {device_ip}")
 
