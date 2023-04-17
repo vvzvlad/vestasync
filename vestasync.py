@@ -31,6 +31,7 @@ main_parser.add_argument('--gitea_address', help='Gitea address string', require
 main_parser.add_argument('--gitea_token', help='Gitea token', required=True)
 main_parser.add_argument('--device_ip', help='Device IP(s)', required=True, nargs='+', type=str)
 main_parser.add_argument('--user_cmd', help='User commands file')
+main_parser.add_argument('--reinstall_packages', help='Reinstall packages installed on source device')
 
 args = main_parser.parse_known_args()
 args = args[0]
@@ -239,6 +240,13 @@ def save_mac_in_cfg(c):
             mac_address = interface["address"]
             c.run(f"echo {mac_address} > /mnt/data/etc/vestasync/macs/{ifname}")
 
+
+def save_packages(c):
+    c.run("apt-mark showmanual > /mnt/data/etc/vestasync/packages")
+
+def install_packages(c):
+    c.run("xargs -a user_installed_packages.txt apt-get install -y")
+
 def check_vestasync_installed(c):
     vestasync_path = "/mnt/data/etc/vestasync"
     result = c.run(f"test -d {vestasync_path}", warn=True)
@@ -263,6 +271,7 @@ def device_install(c):
     init_repo(c)
     ppush_the_repo(c)
     save_mac_in_cfg(c)
+    save_packages(c)
     hostname = save_hostname(c)
     copy_wb_rule(c)
     ppush_the_repo(c)
@@ -298,6 +307,8 @@ def device_restore():
                 git_clone(c)
                 copy_etc(c)
                 restore_hostname(c)
+                if args.reinstall_packages is not None:
+                    install_packages(c)
                 ppush_the_repo(c)
                 create_autogit_systemd(c)
                 create_automac_systemd(c)
