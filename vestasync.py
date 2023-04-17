@@ -109,7 +109,7 @@ def copy_wb_rule(c):
 def create_automac_systemd(c):
     #disable
     for service in ['apply_macs.service']:
-        c.run(f'systemctl disable {service} || true')
+        c.run(f'systemctl disable {service}', warn=True)
 
     file_paths = { #local path: remote path
         './files/apply_macs.sh':            '/usr/local/bin/apply_macs.sh',
@@ -132,8 +132,8 @@ def create_automac_systemd(c):
 
     #check statuses
     for service in ['apply_macs.service']:
-        active = c.run(f'systemctl is-active {service}  || true', hide=True).stdout.strip()
-        enabled = c.run(f'systemctl is-enabled {service}  || true', hide=True).stdout.strip()
+        active = c.run(f'systemctl is-active {service}', hide=True, warn=True).stdout.strip()
+        enabled = c.run(f'systemctl is-enabled {service}', hide=True, warn=True).stdout.strip()
         print(f"{service}: {active}, {enabled}")
 
 
@@ -142,7 +142,7 @@ def create_automac_systemd(c):
 def create_autogit_systemd(c):
     #disable
     for service in ['pushgit.timer', 'pushgit_inotify.service']:
-        c.run(f'systemctl disable {service} || true')
+        c.run(f'systemctl disable {service}', warn=True)
 
 
     #delete old files, copy new files, chmod +x
