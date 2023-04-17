@@ -11,10 +11,20 @@ defineVirtualDevice("vestasync", {
             value: "Update...",
             title: "Last commit hash"
         },
-        autopush: {
+        autopush_inotify: {
             type: "switch",
-            value: true,
+            value: false,
             title: "Auto push on files changed"
+        },
+        autopush_timer: {
+            type: "switch",
+            value: false,
+            title: "Auto push every day"
+        },
+        push_now: {
+            type: "switch",
+            value: false,
+            title: "Commit and push"
         },
         hostname: {
             type: "text",
@@ -64,7 +74,15 @@ function _update_vestasync() {
         captureOutput: true,
         exitCallback: function (exitCode, capturedOutput) {
             var isEnabled = capturedOutput.trim() === "active";
-            dev.vestasync.autopush = isEnabled;
+            dev.vestasync.autopush_inotify = isEnabled;
+        }
+    });
+
+    runShellCommand("systemctl is-active pushgit.timer", {
+        captureOutput: true,
+        exitCallback: function (exitCode, capturedOutput) {
+            var isEnabled = capturedOutput.trim() === "active";
+            dev.vestasync.autopush_timer = isEnabled;
         }
     });
 
@@ -82,14 +100,40 @@ function _update_vestasync() {
 
 };
 
-
-defineRule("_vestasync_autopush", {
-    whenChanged: "vestasync/autopush",
+defineRule("_vestasync_autopush_timer", {
+    whenChanged: "vestasync/autopush_timer",
     then: function (newValue, devName, cellName) {
-        if (dev.vestasync.autopush) {
-            runShellCommand("systemctl daemon-reload ; systemctl enable pushgit_inotify.service ; systemctl start pushgit_inotify.service");
+        if (dev.vestasync.autopush_timer) {
+            runShellCommand("systemctl daemon-reload ; systemctl enable pushgit.timer ; systemctl start pushgit.timer; sleep 10");
+            _update_vestasync();
         } else {
-            runShellCommand("systemctl stop pushgit_inotify.service ; systemctl disable pushgit_inotify.service");
+            runShellCommand("systemctl stop pushgit.timer ; systemctl disable pushgit.timer; sleep 10");
+            _update_vestasync();
+        }
+    }
+});
+
+
+defineRule("_vestasync_autopush_inotify", {
+    whenChanged: "vestasync/autopush_inotify",
+    then: function (newValue, devName, cellName) {
+        if (dev.vestasync.autopush_inotify) {
+            runShellCommand("systemctl daemon-reload ; systemctl enable pushgit_inotify.service ; systemctl start pushgit_inotify.service; sleep 10");
+            _update_vestasync();
+        } else {
+            runShellCommand("systemctl stop pushgit_inotify.service ; systemctl disable pushgit_inotify.service; sleep 10");
+            _update_vestasync();
+        }
+    }
+});
+
+defineRule("_vestasync_push", {
+    whenChanged: "vestasync/push_now",
+    then: function (newValue, devName, cellName) {
+        if (dev.vestasync.push_now) {
+            runShellCommand("systemctl start pushgit.service; sleep 2");
+            dev.vestasync.push_now = false;
+            _update_vestasync();
         }
     }
 });
