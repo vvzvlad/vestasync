@@ -254,6 +254,7 @@ def check_vestasync_installed(c):
 
 def device_update(c):
     print("Found vestasync! Update...")
+    c.run(f'systemctl disable pushgit_inotify.service', warn=True)
     copy_wb_rule(c)
     create_automac_systemd(c)
     create_autogit_systemd(c)
