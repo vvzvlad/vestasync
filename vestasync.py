@@ -165,7 +165,7 @@ def create_autogit_systemd(c):
 
 
     #check statuses
-    for service in ['pushgit.timer', 'pushgit_inotify.service', 'pushgit.service']:
+    for service in ['pushgit.timer', 'pushgit_inotify.service']:
         active = c.run(f'systemctl is-active {service}  || true', hide=True).stdout.strip()
         enabled = c.run(f'systemctl is-enabled {service}  || true', hide=True).stdout.strip()
         print(f"{service}: {active}, {enabled}")
