@@ -9,6 +9,7 @@ import re
 import sys
 import datetime
 import json
+import socket
 
 
 device_user = "root"
@@ -28,8 +29,8 @@ else:
     main_parser.add_argument('--device_new_name', help='Device new name', required=True)
 main_parser.add_argument('--gitea_address', help='Gitea address string', required=True)
 main_parser.add_argument('--gitea_token', help='Gitea token', required=True)
-main_parser.add_argument('--device_ip', help='Device IP', required=True)
-
+main_parser.add_argument('--device_ip', help='Device IP(s)', required=True, nargs='+', type=str)
+main_parser.add_argument('--user_cmd', help='User commands file')
 
 args = main_parser.parse_known_args()
 args = args[0]
@@ -53,6 +54,8 @@ def get_short_sn(c):
 
 def set_hostname(c):
     c.run(f'hostnamectl set-hostname {args.device_new_name}-{device_short_sn}')
+    hostname = c.run('hostname', hide=True).stdout.strip()
+    return hostname
 
 def save_hostname(c):
     c.run(f'echo $(hostname) > /mnt/data/etc/vestasync/hostname')
@@ -103,53 +106,75 @@ def copy_wb_rule(c):
     c.put("./files/vestasync.js", wb_rule_path)
 
 def create_automac_systemd(c):
-    apply_macs_script_path = "/usr/local/bin/apply_macs.sh"
-    c.run(f"rm {apply_macs_script_path} || true")
-    c.put("./files/apply_macs.sh", apply_macs_script_path)
-    c.run(f"chmod +x {apply_macs_script_path}")
+    #disable
+    for service in ['apply_macs.service']:
+        c.run(f'systemctl disable {service} || true')
 
-    apply_macs_service_path = "/etc/systemd/system/apply_macs.service"
-    c.run(f"rm {apply_macs_service_path} || true")
-    c.put("./files/apply_macs.service", apply_macs_service_path)
+    file_paths = { #local path: remote path
+        './files/apply_macs.sh':            '/usr/local/bin/apply_macs.sh',
+        './files/apply_macs.service':       '/etc/systemd/system/apply_macs.service',
+    }
 
-    c.run("systemctl disable apply_macs.service || true")
+    for local_path, remote_path in file_paths.items():
+        c.run(f"rm {remote_path} || true")
+        c.put(local_path, remote_path)
+        c.run(f"chmod +x {remote_path}")
+
+    #reload
     c.run("systemctl daemon-reload")
-    c.run("systemctl enable apply_macs.service")
+
+    #enable and start
+    for service in ['apply_macs.service']:
+        c.run(f'systemctl enable {service}')
+        c.run(f'systemctl start {service}')
+
+
+    #check statuses
+    for service in ['apply_macs.service']:
+        active = c.run(f'systemctl is-active {service}  || true', hide=True).stdout.strip()
+        enabled = c.run(f'systemctl is-enabled {service}  || true', hide=True).stdout.strip()
+        print(f"{service}: {active}, {enabled}")
+
+
+
 
 def create_autogit_systemd(c):
-    pushgit_script_path = "/usr/local/bin/pushgit.sh"
-    c.run(f"rm {pushgit_script_path} || true")
-    c.put("./files/pushgit.sh", pushgit_script_path)
-    c.run(f"chmod +x {pushgit_script_path}")
-
-    pushgit_inotify_script_path = "/usr/local/bin/pushgit_inotify.sh"
-    c.run(f"rm {pushgit_inotify_script_path} || true")
-    c.put("./files/pushgit.sh", pushgit_inotify_script_path)
-    c.run(f"chmod +x {pushgit_inotify_script_path}")
-
-    pushgit_inotify_service_path = "/etc/systemd/system/pushgit_inotify.service"
-    c.run(f"rm {pushgit_inotify_service_path} || true")
-    c.put("./files/pushgit_inotify.service", pushgit_inotify_service_path)
-    c.run(f"chmod +x {pushgit_inotify_service_path}")
-
-    pushgit_service_path = "/etc/systemd/system/pushgit.service"
-    c.run(f"rm {pushgit_service_path} || true")
-    c.put("./files/pushgit.service", pushgit_service_path)
-    c.run(f"chmod +x {pushgit_service_path}")
-
-    pushgit_timer_path = "/etc/systemd/system/pushgit.timer"
-    c.run(f"rm {pushgit_timer_path} || true")
-    c.put("./files/pushgit.timer", pushgit_timer_path)
-    c.run(f"chmod +x {pushgit_timer_path}")
+    #disable
+    for service in ['pushgit.timer', 'pushgit_inotify.service']:
+        c.run(f'systemctl disable {service} || true')
 
 
-    c.run("systemctl disable pushgit.timer || true")
-    c.run("systemctl disable pushgit_inotify.service || true")
+    #delete old files, copy new files, chmod +x
+    file_paths = { #local path: remote path
+    './files/pushgit.sh':               '/usr/local/bin/pushgit.sh',
+    './files/pushgit_inotify.sh':       '/usr/local/bin/pushgit_inotify.sh',
+    './files/pushgit_inotify.service':  '/etc/systemd/system/pushgit_inotify.service',
+    './files/pushgit.service':          '/etc/systemd/system/pushgit.service',
+    './files/pushgit.timer':            '/etc/systemd/system/pushgit.timer'
+    }
+
+    for local_path, remote_path in file_paths.items():
+        c.run(f"rm {remote_path} || true")
+        c.put(local_path, remote_path)
+        c.run(f"chmod +x {remote_path}")
+
+    #reload
     c.run("systemctl daemon-reload")
-    c.run("systemctl enable pushgit.timer")
-    c.run("systemctl start pushgit.timer")
-    c.run("systemctl enable pushgit_inotify.service")
-    c.run("systemctl start pushgit_inotify.service")
+
+    #enable and start
+    for service in ['pushgit.timer', 'pushgit_inotify.service']:
+        c.run(f'systemctl enable {service}')
+        c.run(f'systemctl start {service}')
+
+
+    #check statuses
+    for service in ['pushgit.timer', 'pushgit_inotify.service', 'pushgit.service']:
+        active = c.run(f'systemctl is-active {service}  || true', hide=True).stdout.strip()
+        enabled = c.run(f'systemctl is-enabled {service}  || true', hide=True).stdout.strip()
+        print(f"{service}: {active}, {enabled}")
+
+
+
 
 def reboot(c):
     c.run("reboot > /dev/null 2>&1 || true")
@@ -219,42 +244,66 @@ def check_vestasync_installed(c):
     result = c.run(f"test -d {vestasync_path}", warn=True)
     return result.ok
 
-def device_install():
-    with Connection(host=args.device_ip, user=device_user, connect_kwargs={"password": "wirenboard"}) as c:
-        if not check_vestasync_installed(c):
-            prepare_packages_wb(c)
-            configure_git(c)
-            get_short_sn(c)
-            set_hostname(c)
-            create_repo(c)
-            init_repo(c)
-            ppush_the_repo(c)
-            save_mac_in_cfg(c)
-            save_hostname(c)
-            copy_wb_rule(c)
-            ppush_the_repo(c)
-            create_automac_systemd(c)
-            create_autogit_systemd(c)
-            run_user_cmd(c)
-            reboot(c)
-        else:
-            print("Found vestasync! Update...")
-            copy_wb_rule(c)
-            create_automac_systemd(c)
-            create_autogit_systemd(c)
+def device_install(c):
+    print("Found vestasync! Update...")
+    copy_wb_rule(c)
+    create_automac_systemd(c)
+    create_autogit_systemd(c)
+    print("Update vestasync complete\n")
+
+def device_update(c):
+    print("Not found vestasync! Install...")
+    prepare_packages_wb(c)
+    configure_git(c)
+    get_short_sn(c)
+    set_hostname(c)
+    create_repo(c)
+    init_repo(c)
+    ppush_the_repo(c)
+    save_mac_in_cfg(c)
+    hostname = save_hostname(c)
+    copy_wb_rule(c)
+    ppush_the_repo(c)
+    create_automac_systemd(c)
+    create_autogit_systemd(c)
+    run_user_cmd(c)
+    reboot(c)
+    print(f"Install vestasync complete (hostname {hostname}), reboot target device\n")
+
+def device_install_or_update():
+    print(f"Install/update command on host(s) {', '.join(args.device_ip)}")
+    for device_ip in args.device_ip:
+        with Connection(host=device_ip, user=device_user, connect_kwargs={"password": "wirenboard"}) as c:
+            print(f"\nConnect to {device_ip} as {device_user}..")
+            try:
+                if not check_vestasync_installed(c):
+                    device_update(c)
+                else:
+                    device_install(c)
+            except socket.timeout:
+                print(f"Failed to connect to the host {device_ip}")
 
 
 def device_restore():
-    with Connection(host=args.device_ip, user=device_user) as c:
-        #prepare_packages_wb(c)
-        #configure_git(c)
-        #git_clone(c)
-        #copy_etc(c)
-        #restore_hostname(c)
-        #ppush_the_repo(c)
+    for device_ip in args.device_ip:
+        with Connection(host=device_ip, user=device_user) as c:
+            print(f"\nConnect to {device_ip} as {device_user}..")
+            try:
+                if check_vestasync_installed(c):
+                    prepare_packages_wb(c)
+                    configure_git(c)
+                git_clone(c)
+                copy_etc(c)
+                restore_hostname(c)
+                ppush_the_repo(c)
+                create_autogit_systemd(c)
+                create_automac_systemd(c)
+            except socket.timeout:
+                print(f"Failed to connect to the host {device_ip}")
 
-        create_autogit_systemd(c)
-        create_automac_systemd(c)
+
+
+
 
 
 if __name__ == '__main__':
@@ -266,7 +315,7 @@ if __name__ == '__main__':
         exit(1)
 
     if cmd_args.cmd == "install":
-        device_install()
+        device_install_or_update()
     if cmd_args.cmd == "restore":
         device_restore()
 
