@@ -215,7 +215,7 @@ def copy_etc(c):
 def ppush_the_repo(c):
     c.run('cd /mnt/data/etc/ && git add .', hide=True)
     try:
-        c.run('cd /mnt/data/etc/ && git commit -m "$(date)"', hide=True)
+        c.run('GIT_AUTHOR_NAME="vestasync_wb_$(hostname)_update" GIT_COMMITTER_NAME=$GIT_AUTHOR_NAME cd /mnt/data/etc/ && git commit -m "$(date)"', hide=True)
     except UnexpectedExit as e:
         if 'nothing to commit' in e.result.stdout:
             print("Nothing to commit, exit")
