@@ -177,7 +177,7 @@ def create_autogit_systemd(c):
 
 
 def reboot(c):
-    c.run("reboot > /dev/null 2>&1 || true")
+    c.run("reboot > /dev/null 2>&1", warn=True)
 
 def git_clone(c):
     c.run(f'mkdir -p /mnt/data/{args.source_hostname}_etc ', hide=True)
