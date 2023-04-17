@@ -5,6 +5,5 @@ COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 COPY mdns_search.py ./
 COPY vestasync.py ./
-COPY user_cmd.sh ./
 COPY files files/
 CMD ["python", "vestasync.py"]
