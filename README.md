@@ -39,6 +39,11 @@ source .venv/bin/activate
 pip3 install -r requirements.txt
 ```
 
+Можно не устанавливать локально, а запустить докер:
+
+```
+docker run -it --name vestasync vvzvlad/vestasync:latest ./vestasync.py --cmd install --device_ip 192.168.1.58 --gitea_address http://192.168.1.38:3871/ --device_new_name WB_1 --gitea_token de8a2eaee0d2f27746157c2fd563815f932d671c
+```
 
 ## Команды
 
@@ -157,16 +162,14 @@ reboot
 ```bash
 #!/bin/bash
 
-# Создайте массив с парами IP-адреса и имени устройства
+GITEA_ADDRESS="http://192.168.1.101:3001/"
+GITEA_TOKEN="de8a2eaee0d2f27746157c2fd563815f932d671c"
 DEVICES=(
     "192.168.1.1 WB1"
     "192.168.1.2 WB2"
     "192.168.1.3 WB3"
     "192.168.1.4 WB4"
-)
-
-GITEA_ADDRESS="http://192.168.1.101:3001/"
-GITEA_TOKEN="de8a2eaee0d2f27746157c2fd563815f932d671c"
+    )
 
 for DEVICE_INFO in "${DEVICES[@]}"; do
     IP=$(echo "$DEVICE_INFO" | cut -d ' ' -f1)
