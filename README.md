@@ -50,7 +50,7 @@ pip3 install -r requirements.txt
 docker run -it --name vestasync vvzvlad/vestasync:latest \
 ./vestasync.py --cmd install \
 --device_ip 192.168.1.58 \
---gitea_address http://192.168.1.38:3871/ \
+--gitea_address http://192.168.1.38:3001/ \
 --device_new_name WB_1 \
 --gitea_token de8a2eaee0d2f27746157c2fd563815f932d671c
 ```
