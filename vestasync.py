@@ -117,6 +117,7 @@ def create_automac_systemd(c):
 
     for local_path, remote_path in file_paths.items():
         c.put(local_path, remote_path)
+        c.run(f"chmod +x {remote_path}")
 
     #reload
     c.run("systemctl daemon-reload")
@@ -154,6 +155,7 @@ def create_autogit_systemd(c):
 
     for local_path, remote_path in file_paths.items():
         c.put(local_path, remote_path)
+        c.run(f"chmod +x {remote_path}")
 
     #reload
     c.run("systemctl daemon-reload")
