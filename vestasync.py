@@ -98,6 +98,8 @@ def create_repo(c):
 def init_repo(c):
     hostname = c.run('hostname', hide=True).stdout.strip()
     c.run('cd /mnt/data/etc/ && git init')
+    c.run('echo "wb-mqtt-mbgate.conf" > /mnt/data/etc/.gitignore')
+    c.run('echo "wb-mqtt-opcua.conf" >> /mnt/data/etc/.gitignore')
     c.run(f'cd /mnt/data/etc/ && git remote add origin {args.vestasync_gitea_protocol}://{gitea_user}:{args.gitea_token}@{args.vestasync_gitea_host}:{args.vestasync_gitea_port}/{gitea_user}/{hostname}.git')
 
 
