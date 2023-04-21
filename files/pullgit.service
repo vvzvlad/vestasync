@@ -1,9 +1,0 @@
-[Unit]
-Description=Pull git changes
-
-[Service]
-Type=oneshot
-ExecStart=/usr/local/bin/pullgit.sh
-
-[Install]
-WantedBy=multi-user.target

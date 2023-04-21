@@ -1,0 +1,12 @@
+[Unit]
+Description=Script triggered by file changes in a folder (including subfolders)
+
+[Service]
+ExecStartPre=systemctl stop pushgit_inotify.service
+ExecStart=systemctl start pushgit_inotify.service
+ExecStop=systemctl stop pushgit_inotify.service
+Type=oneshot
+RemainAfterExit=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,9 +1,0 @@
-[Unit]
-Description=Push git changes
-
-[Service]
-Type=oneshot
-ExecStart=/usr/local/bin/pushgit.sh
-
-[Install]
-WantedBy=multi-user.target

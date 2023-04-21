@@ -141,35 +141,47 @@ def create_automac_systemd(c):
 
 def create_autogit_systemd(c):
     #disable
-    for service in ['pushgit.timer', 'pushgit_inotify.service']:
+    print("Autogit: stop and disable services")
+    for service in ['pushgit.timer',
+                    'pushgit_inotify_special.service',
+                    'pushgit_inotify.service',
+                    'pushgit_run_on_start.timer' ]:
         c.run(f'systemctl stop {service}', warn=True)
         c.run(f'systemctl disable {service}', warn=True)
 
+    print("Autogit: Remove old files")
+    c.run(f'rm /etc/systemd/system/pushgit*', warn=True)
+    c.run(f'rm /usr/local/bin/pushgit*', warn=True)
 
-    #delete old files, copy new files, chmod +x
+
+    print("Autogit: copy new files, chmod +x")
     file_paths = { #local path: remote path
-    './files/pushgit.sh':               '/usr/local/bin/pushgit.sh',
-    './files/pushgit_inotify.sh':       '/usr/local/bin/pushgit_inotify.sh',
-    './files/pushgit_inotify.service':  '/etc/systemd/system/pushgit_inotify.service',
-    './files/pushgit.service':          '/etc/systemd/system/pushgit.service',
-    './files/pushgit.timer':            '/etc/systemd/system/pushgit.timer'
+    './files/pushgit/pushgit.sh':                       '/usr/local/bin/pushgit.sh',
+    './files/pushgit/pushgit_inotify.sh':               '/usr/local/bin/pushgit_inotify.sh',
+    './files/pushgit/pushgit_inotify.service':          '/etc/systemd/system/pushgit_inotify.service',
+    './files/pushgit/pushgit_run_on_start.timer':       '/etc/systemd/system/pushgit_run_on_start.timer',
+    './files/pushgit/pushgit_inotify_special.service':  '/etc/systemd/system/pushgit_inotify_special.service',
     }
 
     for local_path, remote_path in file_paths.items():
         c.put(local_path, remote_path)
         c.run(f"chmod +x {remote_path}")
 
-    #reload
+    print("Autogit: reload configs")
     c.run("systemctl daemon-reload")
 
     #enable and start
-    for service in ['pushgit.timer', 'pushgit_inotify.service']:
+    print("Autogit: enable run on start")
+    for service in ['pushgit_run_on_start.timer']:
         c.run(f'systemctl enable {service}')
+
+    print("Autogit: start inotify")
+    for service in ['pushgit_inotify_special.service']:
         c.run(f'systemctl start {service}')
 
 
     #check statuses
-    for service in ['pushgit.timer', 'pushgit_inotify.service']:
+    for service in ['pushgit_run_on_start.timer', 'pushgit_inotify.service', 'pushgit_inotify_special.service']:
         active = c.run(f'systemctl is-active {service}  || true', hide=True).stdout.strip()
         enabled = c.run(f'systemctl is-enabled {service}  || true', hide=True).stdout.strip()
         print(f"{service}: {active}, {enabled}")

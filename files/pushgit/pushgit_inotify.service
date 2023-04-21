@@ -1,9 +1,9 @@
 [Unit]
-Description=Script triggered by file changes in a folder (including subfolders)
+Description=Main pushgit
 
 [Service]
+Type=simple
 ExecStart=/usr/local/bin/pushgit_inotify.sh
-Restart=always
 
 [Install]
 WantedBy=multi-user.target

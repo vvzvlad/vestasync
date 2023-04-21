@@ -1,0 +1,9 @@
+[Unit]
+Description=Run pushgit.service on start
+
+[Timer]
+OnBootSec=180
+Unit=pushgit_inotify_special.service
+
+[Install]
+WantedBy=timers.target

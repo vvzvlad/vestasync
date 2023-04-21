@@ -16,11 +16,6 @@ defineVirtualDevice("vestasync", {
             value: false,
             title: "Auto push on files changed"
         },
-        autopush_timer: {
-            type: "switch",
-            value: false,
-            title: "Auto push every day"
-        },
         push_now: {
             type: "pushbutton",
             value: false,
@@ -70,15 +65,7 @@ function _update_vestasync() {
         }
     });
 
-    runShellCommand("systemctl is-active pushgit_inotify.service", {
-        captureOutput: true,
-        exitCallback: function (exitCode, capturedOutput) {
-            var isEnabled = capturedOutput.trim() === "active";
-            getControl("vestasync/autopush_inotify").setValue({ value: isEnabled, notify: false })
-        }
-    });
-
-    runShellCommand("systemctl is-active pushgit.timer", {
+    runShellCommand("systemctl is-active pushgit_inotify_special.service", {
         captureOutput: true,
         exitCallback: function (exitCode, capturedOutput) {
             var isEnabled = capturedOutput.trim() === "active";
@@ -100,28 +87,16 @@ function _update_vestasync() {
 
 };
 
-defineRule("_vestasync_autopush_timer", {
-    whenChanged: "vestasync/autopush_timer",
-    then: function (newValue, devName, cellName) {
-        if (dev.vestasync.autopush_timer) {
-            runShellCommand("systemctl stop pushgit.timer ; systemctl disable pushgit.timer ; systemctl daemon-reload ; systemctl enable pushgit.timer ; systemctl start pushgit.timer");
-            _update_vestasync();
-        } else {
-            runShellCommand("systemctl stop pushgit.timer ; systemctl disable pushgit.timer");
-            _update_vestasync();
-        }
-    }
-});
 
 
 defineRule("_vestasync_autopush_inotify", {
     whenChanged: "vestasync/autopush_inotify",
     then: function (newValue, devName, cellName) {
         if (dev.vestasync.autopush_inotify) {
-            runShellCommand("systemctl stop pushgit_inotify.service ; systemctl disable pushgit_inotify.service ; systemctl daemon-reload ; systemctl enable pushgit_inotify.service ; systemctl start pushgit_inotify.service");
+            runShellCommand("systemctl start pushgit_inotify_special.service");
             _update_vestasync();
         } else {
-            runShellCommand("systemctl stop pushgit_inotify.service ; systemctl disable pushgit_inotify.service");
+            runShellCommand("systemctl stop pushgit_inotify_special.service");
             _update_vestasync();
         }
     }
@@ -133,9 +108,7 @@ defineRule("_vestasync_push", {
     whenChanged: "vestasync/push_now",
     then: function (newValue, devName, cellName) {
         if (dev.vestasync.push_now) {
-            runShellCommand("systemctl start pushgit.service");
-            dev.vestasync.push_now = false;
-            _update_vestasync();
+            runShellCommand("/usr/local/bin/pushgit.sh");
         }
     }
 });
