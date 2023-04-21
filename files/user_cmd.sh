@@ -8,3 +8,5 @@ service ntp stop
 ntpdate pool.ntp.org
 service ntp start
 hwclock --systohc --localtime
+
+apt install serial-tool mc -y
