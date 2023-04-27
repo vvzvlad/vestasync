@@ -9,4 +9,5 @@ ntpdate pool.ntp.org
 service ntp start
 hwclock --systohc --localtime
 
-apt install serial-tool mc -y
+apt install serial-tool mc wb-mb-explorer -y
+
