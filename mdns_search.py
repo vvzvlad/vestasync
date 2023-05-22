@@ -25,7 +25,7 @@ def main():
     browser = ServiceBrowser(zeroconf, "_workstation._tcp.local.", listener)
 
     # Устанавливаем время ожидания и ждем, пока не найдутся все службы
-    timeout = 5
+    timeout = 15
     wait_event = Event()
     wait_event.wait(timeout)
 
