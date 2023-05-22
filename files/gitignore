@@ -1,3 +1,4 @@
 wb-mqtt-mbgate.conf
 wb-mqtt-opcua.conf
 wb-hardware.conf
+resolv.conf
