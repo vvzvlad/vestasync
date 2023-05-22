@@ -261,7 +261,7 @@ def save_packages(c):
     c.run("apt-mark showmanual > /mnt/data/etc/vestasync/packages")
 
 def install_packages(c):
-    c.run("xargs -a user_installed_packages.txt apt-get install -y")
+    c.run("xargs -a user_installed_packages.txt apt-get install -y", warn=True)
 
 def check_vestasync_installed(c):
     vestasync_path = "/mnt/data/etc/vestasync"
