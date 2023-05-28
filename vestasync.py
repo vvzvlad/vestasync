@@ -336,7 +336,7 @@ def device_restore():
                     run_user_cmd(c, args.user_cmd_file)
                 ppush_the_repo(c)
                 reboot(c)
-                print(f"Restore backup complete (hostname {hostname}), rebooting target device..\n")
+                print(f"Restore backup complete (hostname {args.source_hostname}), rebooting target device..\n")
             except socket.timeout:
                 print(f"Failed to connect to the host {device_ip}")
 
