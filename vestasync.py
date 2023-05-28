@@ -66,8 +66,8 @@ def restore_hostname(c):
 
 
 def prepare_packages_wb(c):
-    c.run('apt update')
-    c.run('apt install git apt-transport-https ca-certificates htop sudo mc wget curl jq zip gzip tar  -y')
+    c.run('apt-get update')
+    c.run('apt-get install git apt-transport-https ca-certificates htop sudo mc wget curl jq zip gzip tar  -y')
     c.run('apt-get -y autoremove')
     c.run('apt-get -y clean')
     c.run('apt-get -y autoclean ')
