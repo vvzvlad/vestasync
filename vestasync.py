@@ -188,11 +188,11 @@ def create_autogit_systemd(c):
 
 def mark_original_restored(c, mark):
     if mark == "original":
-        c.run("rm /mnt/data/etc/vestasync/restored", warn=True)
-        c.run("touch /mnt/data/etc/vestasync/original", warn=True)
+        c.run("rm /mnt/data/etc/vestasync/restored", warn=True, hide=True)
+        c.run("touch /mnt/data/etc/vestasync/original", warn=True, hide=True)
     if mark == "restored":
-        c.run("touch /mnt/data/etc/vestasync/restored", warn=True)
-        c.run("rm /mnt/data/etc/vestasync/original", warn=True)
+        c.run("touch /mnt/data/etc/vestasync/restored", warn=True, hide=True)
+        c.run("rm /mnt/data/etc/vestasync/original", warn=True, hide=True)
 
 def reboot(c):
     c.run("reboot > /dev/null 2>&1", warn=True)
