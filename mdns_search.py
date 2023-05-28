@@ -15,6 +15,9 @@ class MyListener:
     def add_service(self, zeroconf, type, name):
         info = zeroconf.get_service_info(type, name)
         self.found_services.append(info)
+        print(f"Name: {info.name}")
+        print(f"IP: {info.parsed_addresses()[0]}")
+        print("")
 
     def update_service(self, zeroconf, type, name):
         pass
@@ -24,25 +27,14 @@ def main():
     listener = MyListener()
     browser = ServiceBrowser(zeroconf, "_workstation._tcp.local.", listener)
 
-    # Устанавливаем время ожидания и ждем, пока не найдутся все службы
-    timeout = 15
-    wait_event = Event()
-    wait_event.wait(timeout)
-
-    # Закрываем браузер служб и освобождаем ресурсы
-    browser.cancel()
-    zeroconf.close()
-
-    # Выводим список найденных служб
-    print("Found services:")
-    for service in listener.found_services:
-        print(f"Name: {service.name}")
-        print(f"IP: {service.parsed_addresses()[0]}")
-        print("")
+    try:
+        while True:
+            time.sleep(0.1)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        browser.cancel()
+        zeroconf.close()
 
 if __name__ == "__main__":
     main()
-
-
-
-
