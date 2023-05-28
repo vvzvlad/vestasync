@@ -202,7 +202,7 @@ def git_clone(c):
     c.run(f'git clone {args.vestasync_gitea_protocol}://{gitea_user}:{args.gitea_token}@{args.vestasync_gitea_host}:{args.vestasync_gitea_port}/{gitea_user}/{args.source_hostname}.git /mnt/data/{args.source_hostname}_etc')
 
 def copy_etc(c):
-    current_date = datetime.datetime.now().strftime("%Y-%m-%d")
+    current_date = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     archive_name = f"backup_{current_date}.tar.gz"
     print(f"Remove old .git...")
     c.run(f"rm -rf /mnt/data/etc/.git")
