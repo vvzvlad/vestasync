@@ -47,7 +47,7 @@ pip3 install -r requirements.txt
 Можно не устанавливать локально, а запустить докер (см. справку по командам ниже):
 
 ```bash
-docker run -it --name vestasync vvzvlad/vestasync:latest \
+docker run --rm -it --name vestasync vvzvlad/vestasync:latest \
 ./vestasync.py --cmd install \
 --device_ip 192.168.1.58 \
 --gitea_address http://192.168.1.38:3001/ \
