@@ -3,9 +3,11 @@ import subprocess
 import re
 import os
 import json
+import argparse
 
-def restart_service():
-    subprocess.Popen(["systemctl", "restart", "wb-mqtt-serial"], stdout=subprocess.PIPE)
+def restart_service(history=False):
+    if history == False:
+        subprocess.Popen(["systemctl", "restart", "wb-mqtt-serial"], stdout=subprocess.PIPE)
 
 def parse_config_file(filename):
     with open(filename, "r") as file:
@@ -20,8 +22,9 @@ def parse_config_file(filename):
 
     return device_to_port, device_stats
 
-def parse_journal(device_to_port, device_stats):
-    p = subprocess.Popen(["journalctl", "-f", "-u", "wb-mqtt-serial"], stdout=subprocess.PIPE)
+def parse_journal(device_to_port, device_stats, history=False):
+    cmd = ["journalctl", "-f", "-u", "wb-mqtt-serial"] if not history else ["journalctl", "-u", "wb-mqtt-serial"]
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     last_log_line = None
 
     for line in iter(p.stdout.readline, b''):
@@ -62,8 +65,14 @@ def print_error_statistics(device_stats, device_to_port):
         type_field = stats['type'].ljust(max_type_length)
         print(f"{type_field}\t {device}\t on port: {device_port},\t timeouts: {stats['errors']},\t disconnects: {stats['disconnects']},\t write failures: {stats['write_failures']}")
 
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-H", "--history", help="parse historical data from journal", action="store_true")
+    args = parser.parse_args()
+    return args
 
 if __name__ == "__main__":
-    restart_service()
+    args = parse_args()
+    restart_service(history=args.history)
     device_to_port, device_stats = parse_config_file("/mnt/data/etc/wb-mqtt-serial.conf")
-    parse_journal(device_to_port, device_stats)
+    parse_journal(device_to_port, device_stats, history=args.history)
