@@ -12,46 +12,58 @@ def parse_config_file(filename):
         config_data = json.load(file)
 
     device_to_port = {}
-    device_errors = {}
+    device_stats = {}
     for port in config_data["ports"]:
         for device in port["devices"]:
             device_to_port[device["slave_id"]] = port["path"]
-            device_errors[device["slave_id"]] = 0  # Initialize error count as zero
+            device_stats[device["slave_id"]] = {"type": device.get("device_type", "Unknown type"), "errors": 0, "disconnects": 0, "write_failures": 0}  # Initialize counts as zero
 
-    return device_to_port, device_errors
+    return device_to_port, device_stats
 
-def parse_journal(device_to_port, device_errors):
+def parse_journal(device_to_port, device_stats):
     p = subprocess.Popen(["journalctl", "-f", "-u", "wb-mqtt-serial"], stdout=subprocess.PIPE)
     last_log_line = None
 
     for line in iter(p.stdout.readline, b''):
         line = line.decode('utf-8')  # convert bytes to string
-        match = re.search(r'modbus:(\d+): Serial protocol error: request timed out', line)
-        if match:
-            device_number = match.group(1)
-            device_errors[device_number] += 1
+        match_error = re.search(r'modbus:(\d+): Serial protocol error: request timed out', line)
+        match_disconnect = re.search(r'INFO: \[serial device\] device modbus:(\d+) is disconnected', line)
+        match_write_failure = re.search(r'WARNING: \[modbus\] failed to write: <modbus:(\d+):', line)
+        if match_error:
+            device_number = match_error.group(1)
+            device_stats[device_number]["errors"] += 1
+        elif match_disconnect:
+            device_number = match_disconnect.group(1)
+            device_stats[device_number]["disconnects"] += 1
+        elif match_write_failure:
+            device_number = match_write_failure.group(1)
+            device_stats[device_number]["write_failures"] += 1
+
         last_log_line = line
 
         # clear the console
-        os.system('cls' if os.name == 'nt' else 'clear')
+        os.system('clear')
 
         # print the last log line
         print(f"Last log line: {last_log_line}")
 
         # print error statistics
-        print_error_statistics(device_errors, device_to_port)
+        print_error_statistics(device_stats, device_to_port)
 
-def print_error_statistics(device_errors, device_to_port):
-    print("\n--- Error Statistics ---")
+def print_error_statistics(device_stats, device_to_port):
+    print("\n--- Device Statistics ---")
 
-    # sort by error count
-    sorted_device_errors = sorted(device_errors.items(), key=lambda x: x[1], reverse=True)
+    # sort by total count
+    sorted_device_stats = sorted(device_stats.items(), key=lambda x: (x[1]["errors"], x[1]["disconnects"], x[1]["write_failures"]), reverse=True)
 
-    for device, error_count in sorted_device_errors:
+    max_type_length = max(len(stats['type']) for stats in device_stats.values())
+    for device, stats in sorted_device_stats:
         device_port = device_to_port.get(device, "Unknown port")
-        print(f"Device number {device}\t(port: {device_port})\t had {error_count} errors")
+        type_field = stats['type'].ljust(max_type_length)
+        print(f"{type_field}\t {device}\t on port: {device_port},\t timeouts: {stats['errors']},\t disconnects: {stats['disconnects']},\t write failures: {stats['write_failures']}")
+
 
 if __name__ == "__main__":
     restart_service()
-    device_to_port, device_errors = parse_config_file("/mnt/data/etc/wb-mqtt-serial.conf")
-    parse_journal(device_to_port, device_errors)
+    device_to_port, device_stats = parse_config_file("/mnt/data/etc/wb-mqtt-serial.conf")
+    parse_journal(device_to_port, device_stats)
