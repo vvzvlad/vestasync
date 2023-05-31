@@ -2,6 +2,11 @@ import paho.mqtt.client as mqtt
 import time
 import os
 from collections import Counter
+import argparse
+
+parser = argparse.ArgumentParser(description="MQTT Device Error Status")
+parser.add_argument("-a", "--wb", type=str, required=True, help="WB address")
+args = parser.parse_args()
 
 def get_modbus_devices():
     devices = {}
@@ -16,7 +21,7 @@ def get_modbus_devices():
     client = mqtt.Client()
     client.on_connect = on_connect
     client.on_message = on_message
-    client.connect("192.168.98.244", 1883, 60)
+    client.connect(args.wb, 1883, 60)
     client.loop_start()
     time.sleep(3)
     client.loop_stop()
@@ -37,12 +42,10 @@ def get_all_controls(devices):
     client = mqtt.Client()
     client.on_connect = on_connect
     client.on_message = on_message
-    client.connect("192.168.98.244", 1883, 60)
+    client.connect(args.wb, 1883, 60)
     client.loop_start()
-    time.sleep(0.5)
+    time.sleep(3)
     client.loop_stop()
-    for device in devices.keys():
-        client.unsubscribe(f"/devices/{device}/controls/+")
     client.disconnect()
     return devices
 
@@ -66,7 +69,7 @@ def get_all_controls_errors(devices):
     client = mqtt.Client()
     client.on_connect = on_connect
     client.on_message = on_message
-    client.connect("192.168.98.244", 1883, 60)
+    client.connect(args.wb, 1883, 60)
     client.loop_start()
 
 def sort_devices(devices):
