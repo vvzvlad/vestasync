@@ -209,7 +209,7 @@ def copy_etc(c):
     print(f"Create backup: /mnt/data/{archive_name}")
     c.run(f"tar -czvf /mnt/data/{archive_name} -C /mnt/data etc", hide=True)
 
-    files_and_folders = c.run("find /mnt/data/WB2-A3TBJXLS_etc", hide=True).stdout.strip().split('\n')
+    files_and_folders = c.run(f"find /mnt/data/{args.source_hostname}_etc", hide=True).stdout.strip().split('\n')
     files_and_folders = [item for item in files_and_folders if ".git" not in item]
 
     for item in files_and_folders:
