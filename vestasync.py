@@ -60,6 +60,8 @@ def set_hostname(c):
 
 def save_hostname(c):
     c.run(f'echo $(hostname) > /mnt/data/etc/vestasync/hostname')
+    hostname = c.run('hostname', hide=True).stdout.strip()
+    return hostname
 
 def restore_hostname(c):
     c.run(f'hostnamectl set-hostname $(cat /mnt/data/etc/vestasync/hostname)')
@@ -84,14 +86,14 @@ def create_repo(c):
     data = {"name": hostname, "private": False}
     response = requests.post(f'{args.vestasync_gitea_protocol}://{args.vestasync_gitea_host}:{args.vestasync_gitea_port}/api/v1/user/repos', headers=headers, json=data)
     if response.status_code == 201:  # 201 - Created, ожидаемый код успешного создания репозитория
-        print("Repository created successfully.")
+        print("[VestaSync] Repository created successfully.")
     elif response.status_code == 409:  # 409 - Conflict, репозиторий уже существует
-        print("Error: Repository already exists.")
-        print("Exiting...")
+        print("[VestaSync] Error: Repository already exists.")
+        print("[VestaSync] Exiting...")
         sys.exit(1)
     else:
-        print(f"Error: Unexpected HTTP status code {response.status_code}")
-        print("Exiting...")
+        print(f"[VestaSync] Create repo error: Unexpected HTTP status code {response.status_code}")
+        print("[VestaSync] Exiting...")
         sys.exit(1)
 
 
@@ -109,8 +111,8 @@ def copy_wb_rule(c):
 def create_automac_systemd(c):
     #disable
     for service in ['apply_macs.service']:
-        c.run(f'systemctl stop {service}', warn=True)
-        c.run(f'systemctl disable {service}', warn=True)
+        c.run(f'systemctl stop {service}', hide=True, warn=True)
+        c.run(f'systemctl disable {service}', hide=True, warn=True)
 
     file_paths = { #local path: remote path
         './files/apply_macs.sh':            '/usr/local/bin/apply_macs.sh',
@@ -126,7 +128,7 @@ def create_automac_systemd(c):
 
     #enable and start
     for service in ['apply_macs.service']:
-        c.run(f'systemctl enable {service}')
+        c.run(f'systemctl enable {service}', hide=True, warn=True)
         #c.run(f'systemctl start {service}')
 
 
@@ -134,27 +136,27 @@ def create_automac_systemd(c):
     for service in ['apply_macs.service']:
         active = c.run(f'systemctl is-active {service}', hide=True, warn=True).stdout.strip()
         enabled = c.run(f'systemctl is-enabled {service}', hide=True, warn=True).stdout.strip()
-        print(f"{service}: {active}, {enabled}")
+        print(f"[VestaSync] Service {service}: {active}, {enabled}")
 
 
 
 
 def create_autogit_systemd(c):
-    #disable
-    print("Autogit: stop and disable services")
+    #disable and remove
+    print("[VestaSync] Autogit: stop and disable services")
     for service in ['pushgit.timer',
                     'pushgit_inotify_special.service',
                     'pushgit_inotify.service',
                     'pushgit_run_on_start.timer' ]:
-        c.run(f'systemctl stop {service}', warn=True)
-        c.run(f'systemctl disable {service}', warn=True)
+        c.run(f'systemctl stop {service}', hide=True, warn=True)
+        c.run(f'systemctl disable {service}', hide=True, warn=True)
 
-    print("Autogit: Remove old files")
-    c.run(f'rm /etc/systemd/system/pushgit*', warn=True)
-    c.run(f'rm /usr/local/bin/pushgit*', warn=True)
+    print("[VestaSync] Autogit: Remove old files")
+    c.run(f'rm /etc/systemd/system/pushgit*', hide=True, warn=True)
+    c.run(f'rm /usr/local/bin/pushgit*', hide=True, warn=True)
 
 
-    print("Autogit: copy new files, chmod +x")
+    print("[VestaSync] Autogit: copy new files, chmod +x")
     file_paths = { #local path: remote path
     './files/pushgit/pushgit.sh':                       '/usr/local/bin/pushgit.sh',
     './files/pushgit/pushgit_inotify.sh':               '/usr/local/bin/pushgit_inotify.sh',
@@ -167,24 +169,24 @@ def create_autogit_systemd(c):
         c.put(local_path, remote_path)
         c.run(f"chmod +x {remote_path}")
 
-    print("Autogit: reload configs")
-    c.run("systemctl daemon-reload")
+    print("[VestaSync] Autogit: reload configs")
+    c.run("systemctl daemon-reload", hide=True, warn=True)
 
     #enable and start
-    print("Autogit: enable run on start")
+    print("[VestaSync] Autogit: enable run on start")
     for service in ['pushgit_run_on_start.timer']:
-        c.run(f'systemctl enable {service}')
+        c.run(f'systemctl enable {service}', hide=True, warn=True)
 
-    print("Autogit: start inotify")
+    print("[VestaSync] Autogit: start inotify")
     for service in ['pushgit_inotify_special.service']:
-        c.run(f'systemctl start {service}')
+        c.run(f'systemctl start {service}', hide=True, warn=True)
 
 
     #check statuses
     for service in ['pushgit_run_on_start.timer', 'pushgit_inotify.service', 'pushgit_inotify_special.service']:
         active = c.run(f'systemctl is-active {service}  || true', hide=True).stdout.strip()
         enabled = c.run(f'systemctl is-enabled {service}  || true', hide=True).stdout.strip()
-        print(f"{service}: {active}, {enabled}")
+        print(f"[VestaSync] Service {service}: {active}, {enabled}")
 
 def mark_original_restored(c, mark):
     if mark == "original":
@@ -197,16 +199,22 @@ def mark_original_restored(c, mark):
 def reboot(c):
     c.run("reboot > /dev/null 2>&1", warn=True)
 
+def git_add_remote(c):
+    hostname = c.run('hostname', hide=True).stdout.strip()
+    c.run(f'cd /mnt/data/etc/ && git remote | xargs -L1 git remote remove', warn=True, hide=True)
+
 def git_clone(c):
+    c.run(f'rm -rf /mnt/data/{args.source_hostname}_etc ', warn=True)
     c.run(f'mkdir -p /mnt/data/{args.source_hostname}_etc ', hide=True)
     c.run(f'git clone {args.vestasync_gitea_protocol}://{gitea_user}:{args.gitea_token}@{args.vestasync_gitea_host}:{args.vestasync_gitea_port}/{gitea_user}/{args.source_hostname}.git /mnt/data/{args.source_hostname}_etc')
 
 def copy_etc(c):
     current_date = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-    archive_name = f"backup_{current_date}.tar.gz"
-    print(f"Remove old .git...")
-    c.run(f"rm -rf /mnt/data/etc/.git")
-    print(f"Create backup: /mnt/data/{archive_name}")
+
+    archive_name = f"backup_of_vestasync_restore_{current_date}.tar.gz"
+    print(f"[VestaSync] Remove old .git...")
+    c.run(f"rm -rf /mnt/data/etc/.git", warn=True, hide=True)
+    print(f"[VestaSync] Create backup: /mnt/data/{archive_name}")
     c.run(f"tar -czvf /mnt/data/{archive_name} -C /mnt/data etc", hide=True)
 
     files_and_folders = c.run(f"find /mnt/data/{args.source_hostname}_etc", hide=True).stdout.strip().split('\n')
@@ -220,13 +228,13 @@ def copy_etc(c):
             c.run(f"mkdir -p {dest_item}")
         print(f"Restore: {item} -> {dest_item}")
 
-    print(f"Сopy source .git...")
+    print(f"[VestaSync] Сopy source .git...")
     c.run(f"cp -R /mnt/data/{args.source_hostname}_etc/.git /mnt/data/etc/.git")
 
-    print(f"Remove source etc...")
+    print(f"[VestaSync] Remove source etc...")
     c.run(f"rm -rf /mnt/data/{args.source_hostname}_etc")
 
-    print(f"Restore completed")
+    print(f"[VestaSync] Restore completed")
 
 def ppush_the_repo(c):
     c.run('cd /mnt/data/etc/ && git add .', hide=True)
@@ -237,7 +245,7 @@ def ppush_the_repo(c):
             print("Nothing to commit, exit")
         else:
             print(f"Error: {e.result.stderr}")
-    c.run('cd /mnt/data/etc/ && git push --force -u origin master', hide=True)
+    c.run('cd /mnt/data/etc/ && git push --force --set-upstream -u origin master', hide=True)
 
 def run_user_cmd(c, file):
     user_cmd_file = "/tmp/user_cmd.sh"
@@ -269,41 +277,69 @@ def check_vestasync_installed(c):
     return result.ok
 
 def device_update(c):
-    print("Found vestasync! Update...")
+    print("[VestaSync] Found vestasync! Update...")
     c.run(f'systemctl disable pushgit_inotify.service', warn=True)
+    print("[VestaSync] Install new wb rule, automac/autogit...")
     copy_wb_rule(c)
     create_automac_systemd(c)
     create_autogit_systemd(c)
-    if args.user_cmd is not None:
-        run_user_cmd(c, args.user_cmd_file)
+    print("[VestaSync] Pushing updated cfg's...")
     ppush_the_repo(c)
-    print("Update vestasync complete\n")
+    print("[VestaSync] Update vestasync complete\n")
 
 def device_install(c):
-    print("Not found vestasync! Install...")
+    print("[VestaSync] Not found vestasync! Install...")
+    print("[VestaSync] Update and install packages...")
     prepare_packages_wb(c)
+
+    print("[VestaSync] Configuring git...")
     configure_git(c)
+
+    print("[VestaSync] Setting hostname...")
     get_short_sn(c)
     set_hostname(c)
-    create_repo(c)
+
+    if args.user_cmd is not None:
+        print("[VestaSync] Run users cmd's...")
+        run_user_cmd(c, args.user_cmd)
+
+    print("[VestaSync] Initializing local repo...")
     init_repo(c)
+
+    print("[VestaSync] Creating repo on gitea and add remote...")
+    create_repo(c)
+    git_add_remote(c)
+
+    print("[VestaSync] Pushing raw cfg's...")
     ppush_the_repo(c)
+
+    print("[VestaSync] Saving mac, packages and hostname in cfg...")
     save_mac_in_cfg(c)
     save_packages(c)
     hostname = save_hostname(c)
+
+    print("[VestaSync] Install wb rule, automac/autogit...")
     copy_wb_rule(c)
-    ppush_the_repo(c)
     create_automac_systemd(c)
     create_autogit_systemd(c)
+
+    print("[VestaSync] Pushing updated cfg's...")
+    ppush_the_repo(c)
+
+    print("[VestaSync] Marking controller as original...")
     mark_original_restored(c, "original")
+
+    print("[VestaSync] Rebooting...")
     reboot(c)
-    print(f"Install vestasync complete (hostname {hostname}), rebooting target device..\n")
+
+    print(f"[VestaSync] Install vestasync complete (hostname {hostname}), rebooting target device..\n")
+
 
 def device_install_or_update():
-    print(f"Install/update command on host(s) {', '.join(args.device_ip)}")
+    print(f"[VestaSync] Install/update command on host(s) {', '.join(args.device_ip)}")
     for device_ip in args.device_ip:
         with Connection(host=device_ip, user=device_user, connect_kwargs={"password": "wirenboard"}) as c:
-            print(f"\nConnect to {device_ip} as {device_user}..")
+            print(f"\n[VestaSync] Connect to {device_ip} as {device_user}..")
             try:
                 if not check_vestasync_installed(c):
                     device_install(c)
@@ -316,29 +352,30 @@ def device_install_or_update():
 def device_restore():
     for device_ip in args.device_ip:
         with Connection(host=device_ip, user=device_user, connect_kwargs={"password": "wirenboard"}) as c:
-            print(f"\nConnect to {device_ip} as {device_user}..")
+            print(f"\n[VestaSync] Connect to {device_ip} as {device_user}..")
             try:
                 if not check_vestasync_installed(c):
-                    print("Not found vestasync! Install...")
+                    print("[VestaSync] Not found vestasync! Install...")
                     prepare_packages_wb(c)
                     configure_git(c)
-                print(f"Restore to {device_ip} backup from {args.source_hostname}")
+                print(f"[VestaSync] Restore to {device_ip} backup from {args.source_hostname}")
                 git_clone(c)
                 copy_etc(c)
                 restore_hostname(c)
                 if args.reinstall_packages is not None:
                     install_packages(c)
-                ppush_the_repo(c)
+                git_add_remote(c)
+                #ppush_the_repo(c) #TODO: не работает!
                 create_autogit_systemd(c)
                 create_automac_systemd(c)
                 mark_original_restored(c, "restored")
                 if args.user_cmd is not None:
-                    run_user_cmd(c, args.user_cmd_file)
-                ppush_the_repo(c)
+                    run_user_cmd(c, args.user_cmd)
+                #ppush_the_repo(c)
                 reboot(c)
-                print(f"Restore backup complete (hostname {args.source_hostname}), rebooting target device..\n")
+                print(f"[VestaSync] Restore backup complete (hostname {args.source_hostname}), rebooting target device..\n")
             except socket.timeout:
-                print(f"Failed to connect to the host {device_ip}")
+                print(f"[VestaSync] Failed to connect to the host {device_ip}")
 
 
 
