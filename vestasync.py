@@ -30,6 +30,7 @@ else:
 main_parser.add_argument('--gitea_address', help='Gitea address string', required=True)
 main_parser.add_argument('--gitea_token', help='Gitea token', required=True)
 main_parser.add_argument('--device_ip', help='Device IP(s)', required=True, nargs='+', type=str)
+main_parser.add_argument('--device_port', help='Device port', type=int)
 main_parser.add_argument('--user_cmd', help='User commands file')
 main_parser.add_argument('--reinstall_packages', help='Reinstall packages installed on source device')
 
@@ -338,7 +339,7 @@ def device_install(c):
 def device_install_or_update():
     print(f"[VestaSync] Install/update command on host(s) {', '.join(args.device_ip)}")
     for device_ip in args.device_ip:
-        with Connection(host=device_ip, user=device_user, connect_kwargs={"password": "wirenboard"}) as c:
+        with Connection(host=device_ip, port=args.device_port, user=device_user, connect_kwargs={"password": "wirenboard"}) as c:
             print(f"\n[VestaSync] Connect to {device_ip} as {device_user}..")
             try:
                 if not check_vestasync_installed(c):
