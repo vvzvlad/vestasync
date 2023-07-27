@@ -18,9 +18,10 @@ def parse_config_file(filename):
     for port in config_data["ports"]:
         for device in port["devices"]:
             device_to_port[device["slave_id"]] = port["path"]
-            device_stats[device["slave_id"]] = {"type": device.get("device_type", "Unknown type"), "errors": 0, "disconnects": 0, "write_failures": 0}
+            device_stats[device["slave_id"]] = {"type": device.get("device_type", "Unknown type"), "errors": 0, "disconnects": 0, "write_failures": 0, "invalid_crc_errors": 0}  # New line
 
     return device_to_port, device_stats
+
 
 def parse_journal(device_to_port, device_stats, skip_lines=10, history=False):
     cmd = ["journalctl", "-f", "-u", "wb-mqtt-serial"] if not history else ["journalctl", "-u", "wb-mqtt-serial"]
@@ -37,6 +38,7 @@ def parse_journal(device_to_port, device_stats, skip_lines=10, history=False):
         match_error = re.search(r'modbus:(\d+): Serial protocol error: request timed out', line)
         match_disconnect = re.search(r'INFO: \[serial device\] device modbus:(\d+) is disconnected', line)
         match_write_failure = re.search(r'WARNING: \[modbus\] failed to write: <modbus:(\d+):', line)
+        match_invalid_crc = re.search(r'modbus:(\d+): Serial protocol error: malformed response: invalid crc', line)  # New line
         if match_error:
             device_number = match_error.group(1)
             device_stats[device_number]["errors"] += 1
@@ -46,6 +48,9 @@ def parse_journal(device_to_port, device_stats, skip_lines=10, history=False):
         elif match_write_failure:
             device_number = match_write_failure.group(1)
             device_stats[device_number]["write_failures"] += 1
+        elif match_invalid_crc:  # New line
+            device_number = match_invalid_crc.group(1)
+            device_stats[device_number]["invalid_crc_errors"] += 1  # New line
 
         last_log_line = line
 
@@ -54,6 +59,7 @@ def parse_journal(device_to_port, device_stats, skip_lines=10, history=False):
         print(f"Last log line: {last_log_line}")
 
         print_error_statistics(device_stats, device_to_port)
+
 
 def print_table(headers, data):
     col_widths = [
@@ -72,10 +78,9 @@ def print_table(headers, data):
 
 
 def print_error_statistics(device_stats, device_to_port):
-    print("\n--- Device Statistics ---")
-    sorted_device_stats = sorted(device_stats.items(), key=lambda x: (x[1]["errors"], x[1]["disconnects"], x[1]["write_failures"]), reverse=True)
-
-    headers = ["Type", "Port", "ID", "Timeouts", "Disconnects", "Write Failures"]
+    print("\n--- Error Statistics ---")
+    sorted_device_stats = sorted(device_stats.items(), key=lambda x: (x[1]["errors"], x[1]["disconnects"], x[1]["write_failures"], x[1]["invalid_crc_errors"]), reverse=True)
+    headers = ["Type", "Port", "ID", "Timeouts", "Disconnects", "Write Failures", "CRC Errors"]
     data = []
 
     for device, stats in sorted_device_stats:
@@ -84,9 +89,11 @@ def print_error_statistics(device_stats, device_to_port):
         error_field = str(stats['errors'])
         disconnect_field = str(stats['disconnects'])
         write_failure_field = str(stats['write_failures'])
-        data.append([type_field, device_port, device, error_field, disconnect_field, write_failure_field])
+        invalid_crc_errors_field = str(stats['invalid_crc_errors'])
+        data.append([type_field, device_port, device, error_field, disconnect_field, write_failure_field, invalid_crc_errors_field])
 
     print_table(headers, data)
+
 
 
 
