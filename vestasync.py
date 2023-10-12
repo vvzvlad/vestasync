@@ -230,7 +230,7 @@ def copy_etc(c):
             c.run(f"mkdir -p {dest_item}")
         print(f"Restore: {item} -> {dest_item}")
 
-    print(f"[VestaSync] Сopy source .git...")
+    print(f"[VestaSync] Copy source .git...")
     c.run(f"cp -R /mnt/data/{args.source_hostname}_etc/.git /mnt/data/etc/.git")
 
     print(f"[VestaSync] Remove source etc...")
