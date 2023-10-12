@@ -200,9 +200,10 @@ def mark_original_restored(c, mark):
 def reboot(c):
     c.run("reboot > /dev/null 2>&1", warn=True)
 
-def git_add_remote(c):
+def git_remove_remote(c):
     hostname = c.run('hostname', hide=True).stdout.strip()
     c.run(f'cd /mnt/data/etc/ && git remote | xargs -L1 git remote remove', warn=True, hide=True)
+
 
 def git_clone(c):
     c.run(f'rm -rf /mnt/data/{args.source_hostname}_etc ', warn=True)
@@ -304,12 +305,11 @@ def device_install(c):
         print("[VestaSync] Run users cmd's...")
         run_user_cmd(c, args.user_cmd)
 
-    print("[VestaSync] Initializing local repo...")
+    print("[VestaSync] Initializing local repo and add remote...")
     init_repo(c)
 
-    print("[VestaSync] Creating repo on gitea and add remote...")
+    print("[VestaSync] Creating repo on gitea...")
     create_repo(c)
-    git_add_remote(c)
 
     print("[VestaSync] Pushing raw cfg's...")
     ppush_the_repo(c)
@@ -365,7 +365,6 @@ def device_restore():
                 restore_hostname(c)
                 if args.reinstall_packages is not None:
                     install_packages(c)
-                git_add_remote(c)
                 #ppush_the_repo(c) #TODO: не работает!
                 create_autogit_systemd(c)
                 create_automac_systemd(c)
